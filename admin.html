@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>쉴가 카페 · 주문 관리</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@200;300;400;600&family=Noto+Sans+KR:wght@200;300;400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --cream: #fdf6ec; --light: #f5ede0; --brown: #6b4c3b; --amber: #c8956c; --dark: #2e1e14;
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: var(--cream); color: var(--dark); min-height: 100vh; }
+
+    /* ── 로그인 ── */
+    .login-wrap {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      background: var(--dark);
+    }
+    .login-card {
+      background: var(--cream); padding: 52px 44px; max-width: 380px; width: 100%;
+      box-shadow: 0 28px 72px rgba(0,0,0,.4);
+    }
+    .login-title {
+      font-family: 'Noto Serif KR', serif; font-size: 1.6rem; font-weight: 600;
+      color: var(--brown); text-align: center; margin-bottom: 8px;
+    }
+    .login-sub {
+      font-size: .7rem; letter-spacing: .3em; color: var(--amber);
+      text-align: center; margin-bottom: 36px; font-weight: 300;
+    }
+    .login-input {
+      width: 100%; padding: 14px 16px; border: 1px solid rgba(107,76,59,.2);
+      background: #fff; font-family: 'Noto Sans KR', sans-serif; font-size: .9rem;
+      color: var(--dark); outline: none; border-radius: 0; margin-bottom: 14px;
+    }
+    .login-input:focus { border-color: var(--brown); }
+    .login-btn {
+      width: 100%; padding: 16px; background: var(--brown); color: #fff; border: none;
+      font-family: 'Noto Sans KR', sans-serif; font-size: .82rem; letter-spacing: .2em;
+      cursor: pointer; transition: background .3s; border-radius: 0;
+    }
+    .login-btn:hover { background: var(--dark); }
+    .login-err { font-size: .8rem; color: #b83820; text-align: center; margin-top: 12px; min-height: 20px; }
+
+    /* ── 어드민 ── */
+    .admin-wrap { display: none; }
+    .admin-header {
+      background: var(--dark); padding: 18px 32px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .admin-logo {
+      font-family: 'Noto Serif KR', serif; font-size: 1.05rem; font-weight: 600;
+      color: #fff; letter-spacing: .2em;
+    }
+    .admin-logo span {
+      color: var(--amber); font-weight: 300; font-size: .72rem;
+      margin-left: 12px; letter-spacing: .15em;
+    }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    .home-link {
+      color: rgba(255,255,255,.5); font-size: .72rem; letter-spacing: .12em;
+      text-decoration: none; transition: color .2s;
+    }
+    .home-link:hover { color: rgba(255,255,255,.85); }
+    .admin-logout {
+      background: none; border: 1px solid rgba(255,255,255,.2); color: rgba(255,255,255,.6);
+      padding: 7px 16px; font-size: .72rem; letter-spacing: .12em; cursor: pointer;
+      transition: all .2s; font-family: 'Noto Sans KR', sans-serif;
+    }
+    .admin-logout:hover { border-color: rgba(255,255,255,.5); color: #fff; }
+
+    .admin-body { max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
+
+    /* ── 통계 ── */
+    .stats-row { display: flex; gap: 16px; margin-bottom: 36px; flex-wrap: wrap; }
+    .stat-card {
+      background: #fff; border: 1px solid rgba(107,76,59,.1);
+      padding: 22px 28px; flex: 1; min-width: 140px;
+    }
+    .stat-label {
+      font-size: .6rem; letter-spacing: .32em; color: var(--amber);
+      font-weight: 400; margin-bottom: 8px; text-transform: uppercase;
+    }
+    .stat-value {
+      font-family: 'Noto Serif KR', serif; font-size: 2.2rem; font-weight: 600;
+      color: var(--dark); line-height: 1;
+    }
+    .stat-sub { font-size: .75rem; color: #9e7c6a; font-weight: 300; margin-top: 5px; }
+
+    /* ── 주문 목록 ── */
+    .section-title {
+      font-family: 'Noto Serif KR', serif; font-size: 1.05rem; font-weight: 600;
+      color: var(--brown); margin-bottom: 16px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .live-dot {
+      width: 8px; height: 8px; border-radius: 50%; background: #3aa876;
+      animation: pulse 2s infinite; flex-shrink: 0;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: .5; transform: scale(1.4); }
+    }
+
+    .orders-table { width: 100%; border-collapse: collapse; background: #fff; }
+    .orders-table th {
+      background: var(--light); font-size: .6rem; letter-spacing: .25em; color: var(--amber);
+      font-weight: 400; padding: 13px 16px; text-align: left; text-transform: uppercase;
+      border-bottom: 1px solid rgba(107,76,59,.1); white-space: nowrap;
+    }
+    .orders-table td {
+      padding: 15px 16px; border-bottom: 1px solid rgba(107,76,59,.07);
+      font-size: .87rem; vertical-align: middle;
+    }
+    .orders-table tr:last-child td { border-bottom: none; }
+    .orders-table tr:hover td { background: var(--cream); }
+    .orders-table tr.new-order td { background: #fffbf4; }
+
+    .temp-badge {
+      display: inline-block; padding: 3px 9px; border-radius: 20px;
+      font-size: .58rem; font-weight: 600; letter-spacing: .1em;
+    }
+    .temp-hot { background: #fff0ec; color: #b83820; border: 1px solid #f0c0b0; }
+    .temp-ice { background: #edf4ff; color: #205cb0; border: 1px solid #b8d4f4; }
+
+    .new-badge {
+      display: inline-block; background: var(--amber); color: #fff;
+      font-size: .55rem; padding: 2px 7px; letter-spacing: .1em; font-weight: 600;
+      margin-left: 8px; vertical-align: middle;
+    }
+
+    .done-btn {
+      padding: 7px 18px; background: var(--brown); color: #fff; border: none;
+      font-family: 'Noto Sans KR', sans-serif; font-size: .72rem; letter-spacing: .1em;
+      cursor: pointer; transition: background .2s; border-radius: 0; white-space: nowrap;
+    }
+    .done-btn:hover { background: var(--dark); }
+
+    .empty-msg {
+      text-align: center; padding: 72px 20px;
+      color: #b8a090; font-size: .9rem; font-weight: 300;
+      background: #fff; border: 1px solid rgba(107,76,59,.08);
+    }
+
+    /* ── 토스트 ── */
+    .toast {
+      position: fixed; bottom: 28px; left: 50%;
+      transform: translateX(-50%) translateY(16px);
+      background: var(--dark); color: #fff;
+      padding: 12px 26px; font-size: .82rem; letter-spacing: .06em; font-weight: 300;
+      opacity: 0; transition: opacity .3s, transform .3s;
+      pointer-events: none; white-space: nowrap; z-index: 3000;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.new { background: #3aa876; }
+
+    @media (max-width: 700px) {
+      .admin-body { padding: 24px 16px; }
+      .orders-table th:nth-child(6), .orders-table td:nth-child(6) { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ 로그인 ══ -->
+<div class="login-wrap" id="login-wrap">
+  <div class="login-card">
+    <h1 class="login-title">쉴가 카페</h1>
+    <p class="login-sub">ORDER MANAGEMENT</p>
+    <input type="password" class="login-input" id="pw-input"
+           placeholder="비밀번호를 입력하세요"
+           onkeydown="if(event.key==='Enter') doLogin()">
+    <button class="login-btn" onclick="doLogin()">로그인</button>
+    <p class="login-err" id="login-err"></p>
+  </div>
+</div>
+
+<!-- ══ 어드민 ══ -->
+<div class="admin-wrap" id="admin-wrap">
+  <header class="admin-header">
+    <div class="admin-logo">쉴가 <span>ORDER MANAGEMENT</span></div>
+    <div class="header-right">
+      <a href="index.html" class="home-link">← 홈페이지</a>
+      <button class="admin-logout" onclick="doLogout()">로그아웃</button>
+    </div>
+  </header>
+
+  <div class="admin-body">
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">대기 중인 주문</div>
+        <div class="stat-value" id="stat-pending">—</div>
+        <div class="stat-sub">건</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">대기 중인 수량</div>
+        <div class="stat-value" id="stat-qty">—</div>
+        <div class="stat-sub">잔</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">마지막 업데이트</div>
+        <div class="stat-value" id="stat-time" style="font-size:1.1rem;padding-top:6px">—</div>
+        <div class="stat-sub">실시간 연결됨</div>
+      </div>
+    </div>
+
+    <div class="section-title">
+      <span class="live-dot"></span>
+      실시간 주문 현황
+    </div>
+
+    <div id="orders-container">
+      <p class="empty-msg">주문을 불러오는 중...</p>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL  = 'https://ybsvvwtiqhkbgdtdkais.supabase.co';
+  const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlic3Z2d3RpcWhrYmdkdGRrYWlzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxMjYzNTMsImV4cCI6MjA5NTcwMjM1M30.hySUwnDxWHBpr5d3cmxseCcVf1zgvCCpipHDrziLmt8';
+  const PASSWORD = 'shilga2024';
+
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  let orders = [];
+  let newIds = new Set();
+  let channel = null;
+
+  /* ── 로그인 ── */
+  function doLogin() {
+    if (document.getElementById('pw-input').value === PASSWORD) {
+      sessionStorage.setItem('shilga_admin', '1');
+      document.getElementById('login-wrap').style.display = 'none';
+      document.getElementById('admin-wrap').style.display = 'block';
+      initAdmin();
+    } else {
+      document.getElementById('login-err').textContent = '비밀번호가 올바르지 않습니다.';
+    }
+  }
+
+  function doLogout() {
+    sessionStorage.removeItem('shilga_admin');
+    if (channel) sb.removeChannel(channel);
+    document.getElementById('admin-wrap').style.display = 'none';
+    document.getElementById('login-wrap').style.display = 'flex';
+    document.getElementById('pw-input').value = '';
+    document.getElementById('login-err').textContent = '';
+  }
+
+  if (sessionStorage.getItem('shilga_admin') === '1') {
+    document.getElementById('login-wrap').style.display = 'none';
+    document.getElementById('admin-wrap').style.display = 'block';
+    initAdmin();
+  }
+
+  /* ── 초기화 ── */
+  async function initAdmin() {
+    await loadOrders();
+    subscribeRealtime();
+  }
+
+  /* ── 주문 불러오기 ── */
+  async function loadOrders() {
+    const today = new Date().toISOString().slice(0, 10);
+    const { data, error } = await sb
+      .from('orders')
+      .select('*')
+      .gte('created_at', today + 'T00:00:00')
+      .order('created_at', { ascending: false });
+
+    if (error) { console.error(error); return; }
+    orders = data || [];
+    render();
+    updateStats();
+  }
+
+  /* ── 실시간 구독 ── */
+  function subscribeRealtime() {
+    channel = sb.channel('orders-realtime')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, payload => {
+        orders.unshift(payload.new);
+        newIds.add(payload.new.id);
+        render();
+        updateStats();
+        showToast(`새 주문 · ${payload.new.customer_name}님 — ${payload.new.menu_item}`, true);
+        setTimeout(() => { newIds.delete(payload.new.id); render(); }, 10000);
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'orders' }, payload => {
+        orders = orders.filter(o => o.id !== payload.old.id);
+        render();
+        updateStats();
+      })
+      .subscribe();
+  }
+
+  /* ── 렌더 ── */
+  function render() {
+    const c = document.getElementById('orders-container');
+    if (!orders.length) {
+      c.innerHTML = '<p class="empty-msg">현재 대기 중인 주문이 없습니다 ☕</p>';
+      return;
+    }
+    const rows = orders.map(o => {
+      const t = new Date(o.created_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+      const temp = o.temperature
+        ? `<span class="temp-badge ${o.temperature === 'HOT' ? 'temp-hot' : 'temp-ice'}">${o.temperature}</span>`
+        : '<span style="color:#c4b0a0">—</span>';
+      const isNew = newIds.has(o.id);
+      return `<tr class="${isNew ? 'new-order' : ''}">
+        <td>${t}${isNew ? '<span class="new-badge">NEW</span>' : ''}</td>
+        <td><strong>${o.customer_name}</strong></td>
+        <td>${o.menu_item}</td>
+        <td>${temp}</td>
+        <td style="text-align:center;font-family:'Noto Serif KR',serif;font-size:1rem;font-weight:600">${o.quantity}</td>
+        <td style="color:#9e7c6a;font-size:.82rem">${o.note || '—'}</td>
+        <td><button class="done-btn" onclick="markDone(${o.id})">완료 ✓</button></td>
+      </tr>`;
+    }).join('');
+
+    c.innerHTML = `<table class="orders-table">
+      <thead><tr>
+        <th>시간</th><th>이름</th><th>메뉴</th><th>온도</th>
+        <th style="text-align:center">수량</th><th>요청사항</th><th></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  }
+
+  /* ── 통계 ── */
+  function updateStats() {
+    document.getElementById('stat-pending').textContent = orders.length;
+    document.getElementById('stat-qty').textContent = orders.reduce((s, o) => s + o.quantity, 0);
+    document.getElementById('stat-time').textContent =
+      new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
+
+  /* ── 완료 처리 ── */
+  async function markDone(id) {
+    const { error } = await sb.from('orders').delete().eq('id', id);
+    if (error) { showToast('오류가 발생했습니다.'); return; }
+    orders = orders.filter(o => o.id !== id);
+    render();
+    updateStats();
+    showToast('주문 완료 처리됐습니다.');
+  }
+
+  /* ── 토스트 ── */
+  function showToast(msg, isNew = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast' + (isNew ? ' new' : '');
+    void t.offsetWidth;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 4000);
+  }
+</script>
+</body>
+</html>
